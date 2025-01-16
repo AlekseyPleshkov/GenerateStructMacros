@@ -1,11 +1,9 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
+//
+//  GenerateStruct.swift
+//  GenerateStruct
+//
+//  Created by Aleksey Pleshkov on 16.01.2025.
+//
 
-/// A macro that produces both a value and a string containing the
-/// source code that generated the value. For example,
-///
-///     #stringify(x + y)
-///
-/// produces a tuple `(x + y, "x + y")`.
-@freestanding(expression)
-public macro stringify<T>(_ value: T) -> (T, String) = #externalMacro(module: "GenerateStructMacros", type: "StringifyMacro")
+@attached(member, names: arbitrary)
+public macro GenerateStruct() = #externalMacro(module: "GenerateStructMacros", type: "GenerateStructMacro")

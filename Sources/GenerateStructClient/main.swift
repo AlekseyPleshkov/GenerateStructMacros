@@ -1,8 +1,27 @@
+//
+//  main.swift
+//  GenerateStruct
+//
+//  Created by Aleksey Pleshkov on 16.01.2025.
+//
+
 import GenerateStruct
 
-let a = 17
-let b = 25
+@GenerateStruct
+public class Test {
+    private let name: String
+    let age: Int
+    
+    init(name: String, age: Int) {
+        self.name = name
+        self.age = age
+    }
+}
 
-let (result, code) = #stringify(a + b)
-
-print("The value \(result) was produced by the code \"\(code)\"")
+func test() {
+    let one = Test(name: "one", age: 1)
+    let two = Test.StructTest(name: "", age: 10)
+    let three = one.toStruct()
+    
+    print(one, two, three)
+}

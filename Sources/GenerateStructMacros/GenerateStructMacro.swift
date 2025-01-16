@@ -1,33 +1,73 @@
-import SwiftCompilerPlugin
+//
+//  GenerateStructMacro.swift
+//  GenerateStruct
+//
+//  Created by Aleksey Pleshkov on 16.01.2025.
+//
+
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
-/// Implementation of the `stringify` macro, which takes an expression
-/// of any type and produces a tuple containing the value of that expression
-/// and the source code that produced the value. For example
-///
-///     #stringify(x + y)
-///
-///  will expand to
-///
-///     (x + y, "x + y")
-public struct StringifyMacro: ExpressionMacro {
+public struct GenerateStructMacro: MemberMacro {
     public static func expansion(
-        of node: some FreestandingMacroExpansionSyntax,
+        of node: AttributeSyntax,
+        providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
-    ) -> ExprSyntax {
-        guard let argument = node.arguments.first?.expression else {
-            fatalError("compiler bug: the macro does not have any arguments")
+    ) throws -> [DeclSyntax] {
+        guard let object = declaration.as(ClassDeclSyntax.self) else {
+            throw CustomError.notClass
         }
 
-        return "(\(argument), \(literal: argument.description))"
-    }
-}
+        let structName = "Struct\(object.name.text)"
+        let structAccessLevel = object.modifiers
+            .compactMap { AccessLevel(rawValue: $0.name.text) }
+            .first ?? .internal
+                
+        var properties: [(name: String, type: String, accessLevel: AccessLevel)] = []
+        
+        for member in object.memberBlock.members {
+            guard let variable = member.decl.as(VariableDeclSyntax.self) else {
+                continue
+            }
+            
+            let variableAccessLevel = variable.modifiers
+                .compactMap { AccessLevel(rawValue: $0.name.text) }
+                .first ?? .internal
+                        
+            for binding in variable.bindings {
+                guard
+                    let patternBinding = binding.pattern.as(IdentifierPatternSyntax.self),
+                    let typeAnnotation = binding.typeAnnotation?.type
+                else {
+                    continue
+                }
+                
+                let propertyName = patternBinding.identifier.text
+                let propertyType = typeAnnotation.description.trimmingCharacters(in: .whitespaces)
+                
+                properties.append((propertyName, propertyType, variableAccessLevel))
+            }
+        }
+        
+        let toStructParameters = properties.map { "\($0.name): self.\($0.name)" }.joined(separator: ", ")
+        let initParameters = properties.map { "\($0.name): \($0.type)" }.joined(separator: ", ")
+        let initAssignments = properties.map { "self.\($0.name) = \($0.name)" }.joined(separator: "\n        ")
 
-@main
-struct GenerateStructPlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [
-        StringifyMacro.self,
-    ]
+        let stringLiteral = """
+        \(structAccessLevel) func toStruct() -> \(structName) {
+            \(structName)(\(toStructParameters))
+        }
+        
+        \(structAccessLevel) struct \(structName) {
+            \(properties.map { "\($0.accessLevel) let \($0.name): \($0.type)" }.joined(separator: "\n    "))
+        
+            \(structAccessLevel) init(\(initParameters)) {
+                \(initAssignments)
+            }
+        }
+        """
+        
+        return [DeclSyntax(stringLiteral: stringLiteral)]
+    }
 }
