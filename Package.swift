@@ -5,7 +5,7 @@ import PackageDescription
 import CompilerPluginSupport
 
 let package = Package(
-    name: "GenerateStruct",
+    name: "generate-struct-macro",
     platforms: [
         .macOS(.v10_15),
         .iOS(.v13),
@@ -24,7 +24,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.0-latest"),
+        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "600.0.1"),
     ],
     targets: [
         .macro(

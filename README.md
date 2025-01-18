@@ -1,4 +1,4 @@
-# GenerateStructMacros
+# generate-struct-macro
 
 Swift macros to generate a struct based on a class. When you add the @GenerateStruct annotation to the class, it will generate the struct inside the class with the same properties and access levels.
 
